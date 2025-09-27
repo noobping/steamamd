@@ -1,8 +1,6 @@
 FROM archlinux:latest
 
-# Enable multilib (Steam needs 32-bit)
-RUN sed -i 's/^#Color/Color/' /etc/pacman.conf \
- && sed -i '/\[multilib\]/{N;s/#\[multilib\]\n#Include/\[multilib\]\nInclude/}' /etc/pacman.conf \
+RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf \
  && pacman -Syu --noconfirm
 
 # Minimal runtime: Steam, AMD Vulkan/VA-API, gamescope, Xwayland, PulseAudio (null sink)
