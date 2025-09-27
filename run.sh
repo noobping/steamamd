@@ -23,25 +23,12 @@ done
 # Ensure a null sink exists so Remote Play gets audio
 pactl load-module module-null-sink sink_name=GameSink \
   sink_properties=device.description=GameSink >/dev/null 2>&1 || true
-export PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native"
-
-# ----- wlroots headless: disable seat/logind; no input devices -----
-export WLR_BACKENDS=headless
-export WLR_LIBINPUT_NO_DEVICES=1
-export WLR_SESSION=0
 
 # Virtual display parameters
 W=${GAMESCOPE_WIDTH:-1920}
 H=${GAMESCOPE_HEIGHT:-1080}
 FPS=${GAMESCOPE_FPS:-60}
 
-# Prefer gamescope headless backend if available
-if gamescope --help 2>/dev/null | grep -q "backend.*headless"; then
-  BACKEND=(--backend headless)
-else
-  BACKEND=()
-fi
-
 # Run gamescope -> Steam Big Picture (no --xwayland flag to avoid count parsing)
-exec gamescope "${BACKEND[@]}" -w "$W" -h "$H" -r "$FPS" -- \
+exec gamescope --backend headless -w "$W" -h "$H" -r "$FPS" -- \
   steam -tenfoot -fulldesktopres -silent
