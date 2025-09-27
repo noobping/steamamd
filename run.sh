@@ -1,31 +1,47 @@
 #!/bin/bash
 set -euo pipefail
 
-# Runtime dir inside HOME
-export XDG_RUNTIME_DIR=$HOME/.xdg-runtime
+# Use a private runtime dir in HOME
+export XDG_RUNTIME_DIR="$HOME/.xdg-runtime"
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-# Start PulseAudio
-pulseaudio -D --exit-idle-time=-1 || true
-for i in $(seq 1 30); do
-  pactl info >/dev/null 2>&1 && break
-  sleep 0.2
-done
-pactl load-module module-null-sink sink_name=GameSink \
-    sink_properties=device.description=GameSink >/dev/null 2>&1 || true
-export PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native
+# ----- Audio: Pulse null-sink -----
+# Clean any stale sockets
+rm -rf "$XDG_RUNTIME_DIR/pulse"
+mkdir -p "$XDG_RUNTIME_DIR/pulse"
 
-# gamescope virtual display
+# Start PulseAudio (quietly). If it’s already running, continue.
+pulseaudio --start --daemonize=true --log-level=error || true
+
+# Wait until pactl is ready (Pulse socket created)
+for i in $(seq 1 50); do
+  if pactl info >/dev/null 2>&1; then break; fi
+  sleep 0.1
+done
+
+# Ensure a null sink exists so Remote Play gets audio
+pactl load-module module-null-sink sink_name=GameSink \
+  sink_properties=device.description=GameSink >/dev/null 2>&1 || true
+export PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native"
+
+# ----- wlroots headless: disable seat/logind; no input devices -----
+export WLR_BACKENDS=headless
+export WLR_LIBINPUT_NO_DEVICES=1
+export WLR_SESSION=0
+
+# Virtual display parameters
 W=${GAMESCOPE_WIDTH:-1920}
 H=${GAMESCOPE_HEIGHT:-1080}
 FPS=${GAMESCOPE_FPS:-60}
 
+# Prefer gamescope headless backend if available
 if gamescope --help 2>/dev/null | grep -q "backend.*headless"; then
   BACKEND=(--backend headless)
 else
   BACKEND=()
 fi
 
-exec gamescope "${BACKEND[@]}" -w "$W" -h "$H" -r "$FPS" --xwayland -- \
+# Run gamescope -> Steam Big Picture (no --xwayland flag to avoid count parsing)
+exec gamescope "${BACKEND[@]}" -w "$W" -h "$H" -r "$FPS" -- \
   steam -tenfoot -fulldesktopres -silent
