@@ -2,7 +2,7 @@
 build
 
 ```sh
-podman build -t arch-steam-headless -f Containerfile .
+podman build -t arch-steam-headless -f Dockerfile .
 ```
 
 Persist Steam data on the host
