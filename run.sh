@@ -6,21 +6,14 @@ export XDG_RUNTIME_DIR="$HOME/.xdg-runtime"
 mkdir -p "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
 
-# ----- Audio: Pulse null-sink -----
-# Clean any stale sockets
-rm -rf "$XDG_RUNTIME_DIR/pulse"
-mkdir -p "$XDG_RUNTIME_DIR/pulse"
+# start PipeWire stack in the container
+(pipewire --verbose=0 >/dev/null 2>&1 &) || true
+(wireplumber >/dev/null 2>&1 &) || true
 
-# Start PulseAudio (quietly). If it’s already running, continue.
-pulseaudio --start --daemonize=true --log-level=error || true
+# wait for sockets to appear
+for i in {1..20}; do pactl info >/dev/null 2>&1 && break; sleep 0.2; done
 
-# Wait until pactl is ready (Pulse socket created)
-for i in $(seq 1 50); do
-  if pactl info >/dev/null 2>&1; then break; fi
-  sleep 0.1
-done
-
-# Ensure a null sink exists so Remote Play gets audio
+# create the null sink for Remote Play
 pactl load-module module-null-sink sink_name=GameSink \
   sink_properties=device.description=GameSink >/dev/null 2>&1 || true
 

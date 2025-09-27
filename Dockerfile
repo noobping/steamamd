@@ -9,7 +9,7 @@ RUN pacman -S --noconfirm \
     vulkan-radeon lib32-vulkan-radeon vulkan-tools \
     libva-mesa-driver lib32-libva-mesa-driver \
     gamescope xorg-xwayland \
-    pulseaudio \
+    pipewire pipewire-pulse wireplumber \
     ttf-liberation \
  && pacman -Scc --noconfirm
 
@@ -23,7 +23,7 @@ RUN echo WLR_SESSION=0 >> /etc/environment
 RUN echo LIBVA_DRIVER_NAME=radeonsi >> /etc/environment
 RUN echo VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json >> /etc/environment
 RUN echo __GL_SHADER_DISK_CACHE=1 >> /etc/environment
-RUN echo PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native" >> /etc/environment
+RUN echo PULSE_SERVER="unix:/tmp/pulse/native" >> /etc/environment
 
 COPY ./run.sh /usr/local/bin/headless.sh
 RUN chmod +x /usr/local/bin/headless.sh
