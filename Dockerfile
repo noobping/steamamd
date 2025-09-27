@@ -3,7 +3,6 @@ FROM archlinux:latest
 RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf \
  && pacman -Syu --noconfirm
 
-# Minimal runtime: Steam, AMD Vulkan/VA-API, gamescope, Xwayland, PulseAudio (null sink)
 RUN pacman -S --noconfirm \
     steam \
     mesa lib32-mesa \
@@ -14,20 +13,21 @@ RUN pacman -S --noconfirm \
     ttf-liberation \
  && pacman -Scc --noconfirm
 
-# Non-root user; we’ll map host UID with --userns=keep-id
 RUN useradd -m -s /bin/bash steamuser || true
 ENV HOME=/home/steamuser
 WORKDIR /home/steamuser
 
-# Good defaults for AMD on Linux
-ENV LIBVA_DRIVER_NAME=radeonsi \
-    VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json \
-    __GL_SHADER_DISK_CACHE=1
+RUN echo WLR_BACKENDS=headless >> /etc/environment
+RUN echo WLR_LIBINPUT_NO_DEVICES=1 >> /etc/environment
+RUN echo WLR_SESSION=0 >> /etc/environment
+RUN echo LIBVA_DRIVER_NAME=radeonsi >> /etc/environment
+RUN echo VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json >> /etc/environment
+RUN echo __GL_SHADER_DISK_CACHE=1 >> /etc/environment
+RUN echo PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse/native" >> /etc/environment
 
 COPY ./run.sh /usr/local/bin/headless.sh
 RUN chmod +x /usr/local/bin/headless.sh
 
-# Small entrypoint that fixes $HOME perms when running rootless
 RUN printf '#!/bin/bash\nchown -R $(id -u):$(id -g) "$HOME" 2>/dev/null || true\nexec "$@"\n' \
   > /usr/local/bin/entry.sh && chmod +x /usr/local/bin/entry.sh
 
