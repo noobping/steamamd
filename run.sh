@@ -29,6 +29,6 @@ W=${GAMESCOPE_WIDTH:-1920}
 H=${GAMESCOPE_HEIGHT:-1080}
 FPS=${GAMESCOPE_FPS:-60}
 
-# Run gamescope -> Steam Big Picture (no --xwayland flag to avoid count parsing)
-exec gamescope --backend headless -w "$W" -h "$H" -r "$FPS" -- \
+# Run gamescope -> Steam Big Picture
+exec gamescope --expose-wayland --steam --backend headless -w "$W" -h "$H" -r "$FPS" -- \
   steam -tenfoot -fulldesktopres -silent
