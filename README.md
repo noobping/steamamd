@@ -1,3 +1,5 @@
+[![Build & Publish](https://github.com/noobping/containerised-steam-remote-play/actions/workflows/docker.yml/badge.svg)](https://github.com/noobping/containerised-steam-remote-play/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-default.svg)](https://opensource.org/licenses/MIT)
 
 # Containerised Steam Remote Play
 
