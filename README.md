@@ -1,10 +1,25 @@
+
+# Containerised Steam Remote Play
+
+The goal of this project is to containerize Steam in a way that allows enabling and using Steam Remote Play. By running Steam inside a container with VNC access, you can log in once, enable Remote Play, and turn your machine into a cloud gaming service.
+This setup is designed to run on Fedora CoreOS (or Fedora Silverblue) with a AMD GPU.
+This project aims to:
+ - Run Steam in a headless container.
+ - Allow VNC access to perform the initial login and configuration.
+ - Expose the necessary ports for Steam Remote Play.
+ - Provide a repeatable, isolated, and portable deployment method using Podman or Docker.
+
+With this, you can transform your machine into your own personal cloud gaming host.
+
+## Quickstart
+
 Build
 
 ```sh
-podman build -t headless-sway-vnc .
+podman build -t steam .
 ```
 
-Run (change VNC_PASSWORD, geometry, etc. as you like)
+Run
 
 ```sh
 podman run --rm -p 5900:5900/tcp \
@@ -17,5 +32,5 @@ podman run --rm -p 5900:5900/tcp \
   --tmpfs /run --tmpfs /tmp \
   -v ./steam/data:/data/.steam:Z \
   -v ./steam/local:/data/.local/share/Steam:Z \
-  headless-sway-vnc
+  steam
 ```
