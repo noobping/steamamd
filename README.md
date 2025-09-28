@@ -1,38 +1,21 @@
-
-build
+Build
 
 ```sh
-podman build -t arch-steam-headless -f Dockerfile .
+podman build -t headless-sway-vnc .
 ```
 
-Persist Steam data on the host
+Run (change VNC_PASSWORD, geometry, etc. as you like)
 
 ```sh
-mkdir -p ~/docker-steam/home \
-         ~/docker-steam/.steam \
-         ~/docker-steam/.local/share/Steam
-```
-
-Run headless
-
-```sh
-podman run --rm -it \
-  --name steam-headless \
-  --network host \
+podman run --rm -p 5900:5900/tcp \
+  -p 27031-27036:27031-27036/udp \
+  -p 27036:27036/tcp \
   --device /dev/dri \
-  --userns=keep-id \
-  --user $(id -u):$(id -g) \
-  --ipc=host \
-  --shm-size=2g \
-  -e HOME=/home/steamuser \
-  -e GAMESCOPE_WIDTH=1920 \
-  -e GAMESCOPE_HEIGHT=1080 \
-  -e GAMESCOPE_FPS=60 \
-  -v ~/docker-steam/home:/home/steamuser:Z \
-  -v ~/docker-steam/.steam:/home/steamuser/.steam:Z \
-  -v ~/docker-steam/.local/share/Steam:/home/steamuser/.local/share/Steam:Z \
-  arch-steam-headless
+  --shm-size=4g \
+  --security-opt seccomp=unconfined \
+  --security-opt label=disable \
+  --tmpfs /run --tmpfs /tmp \
+  -v ./steam/data:/data/.steam:Z \
+  -v ./steam/local:/data/.local/share/Steam:Z \
+  headless-sway-vnc
 ```
-
-First run: Steam will start in Big Picture inside gamescope.
-From your client device (Steam Desktop app or Steam Link), log in with the same account, you should see this machine available—select Stream and finish login/Steam Guard headlessly.

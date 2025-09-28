@@ -1,35 +1,46 @@
-FROM archlinux:latest
+FROM registry.fedoraproject.org/fedora:43
+RUN dnf -y install \
+      sway wayvnc xorg-x11-server-Xwayland \
+      mesa-dri-drivers mesa-libgbm mesa-libEGL \
+      mesa-vulkan-drivers mesa-libGL vulkan-loader vainfo vulkan-tools \
+      pipewire wireplumber pipewire-pulseaudio pipewire-alsa pulseaudio-utils \
+      xdg-user-dirs glibc-langpack-* shadow-utils tini foot wofi coreutils wlr-randr \
+      pciutils util-linux procps-ng iproute net-tools findutils which less vim-minimal \
+    && dnf clean all
+RUN setcap -r /usr/bin/sway || true && \
+    setcap -r /usr/bin/wayvnc || true
+RUN echo 'LANG=en_US.UTF-8' > /etc/locale.conf && \
+    ln -sf /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
 
-RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf \
- && pacman -Syu --noconfirm
+RUN bash -lc 'set -e; \
+  ver=$(rpm -E %fedora); \
+  dnf -y install \
+    "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${ver}.noarch.rpm" \
+    "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${ver}.noarch.rpm"; \
+  dnf -y install steam; \
+  dnf clean all'
 
-RUN pacman -S --noconfirm \
-    steam \
-    mesa lib32-mesa \
-    vulkan-radeon lib32-vulkan-radeon vulkan-tools \
-    libva-mesa-driver lib32-libva-mesa-driver \
-    gamescope xorg-xwayland \
-    pipewire pipewire-pulse wireplumber \
-    ttf-liberation \
- && pacman -Scc --noconfirm
+RUN mkdir -p /etc/{sway,wayvnc}
+COPY sway.conf /etc/sway/config
+COPY wayvnc.conf /etc/wayvnc/config
+RUN useradd -m -b /data -u 1000 -U -s /bin/bash player
 
-RUN useradd -m -s /bin/bash steamuser || true
-ENV HOME=/home/steamuser
-WORKDIR /home/steamuser
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY resolution.sh /usr/local/bin/resolution.sh
+RUN chmod +x /usr/local/bin/*.sh
 
-RUN echo WLR_BACKENDS=headless >> /etc/environment
-RUN echo WLR_LIBINPUT_NO_DEVICES=1 >> /etc/environment
-RUN echo WLR_SESSION=0 >> /etc/environment
-RUN echo LIBVA_DRIVER_NAME=radeonsi >> /etc/environment
-RUN echo VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json >> /etc/environment
-RUN echo __GL_SHADER_DISK_CACHE=1 >> /etc/environment
-RUN echo PULSE_SERVER="unix:/tmp/pulse/native" >> /etc/environment
+EXPOSE 5900/tcp 27031-27036/udp 27036/tcp
 
-COPY ./run.sh /usr/local/bin/headless.sh
-RUN chmod +x /usr/local/bin/headless.sh
+USER player
+WORKDIR /data
+ENV XDG_RUNTIME_DIR=/tmp/run/user/1000 \
+    WLR_BACKENDS=headless \
+    __GLX_VENDOR_LIBRARY_NAME=mesa \
+    STEAM_RUNTIME_HEAVY=1 \
+    GTK_THEME=Adwaita:dark \
+    ADW_DISABLE_PORTAL=1
 
-RUN printf '#!/bin/bash\nchown -R $(id -u):$(id -g) "$HOME" 2>/dev/null || true\nexec "$@"\n' \
-  > /usr/local/bin/entry.sh && chmod +x /usr/local/bin/entry.sh
+VOLUME ["/data/.steam", "/data/.local/share/Steam"]
 
-ENTRYPOINT ["/usr/local/bin/entry.sh"]
-CMD ["/usr/local/bin/headless.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/local/bin/entrypoint.sh"]
