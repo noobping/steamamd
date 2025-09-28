@@ -13,13 +13,19 @@ With this, you can transform your machine into your own personal cloud gaming ho
 
 ## Quickstart
 
-Build
+Pull the image:
 
 ```sh
-podman build -t steam .
+podman pull ghcr.io/noobping/steamamd:latest
 ```
 
-Run
+Or build it locally:
+
+```sh
+podman build -t steamamd .
+```
+
+Run the container:
 
 ```sh
 podman run --rm -p 5900:5900/tcp \
@@ -32,5 +38,5 @@ podman run --rm -p 5900:5900/tcp \
   --tmpfs /run --tmpfs /tmp \
   -v ./steam/data:/data/.steam:Z \
   -v ./steam/local:/data/.local/share/Steam:Z \
-  steam
+  steamamd
 ```
